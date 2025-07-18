@@ -4,7 +4,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const analyticsDataClient = new BetaAnalyticsDataClient();
+// Use environment variables for authentication
+const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+const analyticsDataClient = new BetaAnalyticsDataClient({
+  projectId: credentials.project_id,
+  credentials: credentials
+});
 
 async function testConnection() {
   try {
@@ -17,7 +22,7 @@ async function testConnection() {
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 7);
-    
+
     const formatDate = (date) => {
       return date.toISOString().split('T')[0];
     };
@@ -43,7 +48,7 @@ async function testConnection() {
         metrics: [{ name: 'activeUsers' }, { name: 'sessions' }],
         limit: 10
       });
-      
+
       console.log('✅ Analytics Report: SUCCESS');
       console.log(`   - Data rows: ${response1.rows?.length || 0}`);
       console.log(`   - Dimensions: date, country`);
@@ -63,7 +68,7 @@ async function testConnection() {
         metrics: [{ name: 'activeUsers' }],
         limit: 5
       });
-      
+
       console.log('✅ Real-time Data: SUCCESS');
       console.log(`   - Active users by country: ${response2.rows?.length || 0} countries`);
       if (response2.rows?.[0]) {
@@ -90,17 +95,17 @@ async function testConnection() {
           { name: 'averageSessionDuration' }
         ]
       });
-      
+
       let totalUsers = 0;
       let totalSessions = 0;
       let totalPageViews = 0;
-      
+
       response3.rows?.forEach(row => {
         totalUsers += parseInt(row.metricValues[0].value);
         totalSessions += parseInt(row.metricValues[1].value);
         totalPageViews += parseInt(row.metricValues[2].value);
       });
-      
+
       console.log('✅ Quick Insights (Overview): SUCCESS');
       console.log(`   - Total Users: ${totalUsers}`);
       console.log(`   - Total Sessions: ${totalSessions}`);
@@ -117,15 +122,15 @@ async function testConnection() {
       const [response4] = await analyticsDataClient.getMetadata({
         name: `properties/${propertyId}/metadata`
       });
-      
+
       console.log('✅ Get Metadata: SUCCESS');
       console.log(`   - Available dimensions: ${response4.dimensions?.length || 0}`);
       console.log(`   - Available metrics: ${response4.metrics?.length || 0}`);
-      
+
       // Show some example dimensions and metrics
       const sampleDimensions = response4.dimensions?.slice(0, 3).map(d => d.apiName).join(', ');
       const sampleMetrics = response4.metrics?.slice(0, 3).map(m => m.apiName).join(', ');
-      
+
       console.log(`   - Sample dimensions: ${sampleDimensions}`);
       console.log(`   - Sample metrics: ${sampleMetrics}`);
       testsPassed++;
@@ -140,23 +145,23 @@ async function testConnection() {
       const [response5] = await analyticsDataClient.getMetadata({
         name: `properties/${propertyId}/metadata`
       });
-      
+
       // Search for "country" related dimensions
-      const countryDimensions = response5.dimensions?.filter(dim => 
+      const countryDimensions = response5.dimensions?.filter(dim =>
         dim.apiName?.toLowerCase().includes('country') ||
         dim.uiName?.toLowerCase().includes('country')
       );
-      
+
       // Search for "user" related metrics
-      const userMetrics = response5.metrics?.filter(metric => 
+      const userMetrics = response5.metrics?.filter(metric =>
         metric.apiName?.toLowerCase().includes('user') ||
         metric.uiName?.toLowerCase().includes('user')
       );
-      
+
       console.log('✅ Search Metadata: SUCCESS');
       console.log(`   - Country-related dimensions: ${countryDimensions?.length || 0}`);
       console.log(`   - User-related metrics: ${userMetrics?.length || 0}`);
-      
+
       if (countryDimensions?.length > 0) {
         console.log(`   - Example: ${countryDimensions[0].apiName} (${countryDimensions[0].uiName})`);
       }
@@ -173,7 +178,7 @@ async function testConnection() {
     console.log('\n' + '=' .repeat(60));
     console.log('🎯 TEST SUMMARY');
     console.log('=' .repeat(60));
-    
+
     if (testsPassed === totalTests) {
       console.log(`✅ ALL ${totalTests} TESTS PASSED! 🎉`);
       console.log('\nYour Google Analytics MCP Server is fully functional with:');
@@ -191,13 +196,13 @@ async function testConnection() {
     // Additional connection info
     console.log('\n📋 CONNECTION DETAILS:');
     console.log(`   - Property ID: ${propertyId}`);
-    console.log(`   - Credentials: ${process.env.GOOGLE_APPLICATION_CREDENTIALS ? '✅ Configured' : '❌ Missing'}`);
+    console.log(`   - Service Account: ${credentials.client_email ? '✅ Configured' : '❌ Missing'}`);
     console.log(`   - Test Date Range: ${startDateStr} to ${endDateStr}`);
 
   } catch (error) {
     console.log('💥 CRITICAL ERROR:');
     console.log(error.message);
-    
+
     if (error.code === 7) {
       console.log('\n🔧 PERMISSION ISSUE:');
       console.log('1. Ensure your service account has access to the GA property');
@@ -205,11 +210,11 @@ async function testConnection() {
       console.log('3. Check that Google Analytics Data API is enabled');
     } else if (error.code === 16) {
       console.log('\n🔧 AUTHENTICATION ISSUE:');
-      console.log('1. Check GOOGLE_APPLICATION_CREDENTIALS path');
-      console.log('2. Verify the service account JSON file exists');
-      console.log('3. Ensure the file is readable');
+      console.log('1. Check GOOGLE_CREDENTIALS environment variable');
+      console.log('2. Verify the service account JSON is valid');
+      console.log('3. Ensure the JSON contains all required fields');
     }
-    
+
     process.exit(1);
   }
 }
