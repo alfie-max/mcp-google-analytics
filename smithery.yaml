@@ -1,0 +1,26 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - GA_PROPERTY_ID
+      - GOOGLE_CREDENTIALS
+    properties:
+      GA_PROPERTY_ID:
+        type: string
+        description: Google Analytics 4 property ID
+      GOOGLE_CREDENTIALS:
+        type: string
+        description: JSON string containing the complete Google service account credentials
+  exampleConfig:
+    GA_PROPERTY_ID: "123456789"
+    GOOGLE_CREDENTIALS: '{"type":"service_account","project_id":"my-project","private_key_id":"abcdef123456","private_key":"-----BEGIN
+      PRIVATE KEY-----\n...\n-----END PRIVATE
+      KEY-----\n","client_email":"service-account@my-project.iam.gserviceaccount.com","client_id":"1234567890","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/.../cert.pem"}'
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'node', args: ['src/index.js'], env: { GA_PROPERTY_ID: config.GA_PROPERTY_ID, GOOGLE_CREDENTIALS: config.GOOGLE_CREDENTIALS } })
