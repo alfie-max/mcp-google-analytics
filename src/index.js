@@ -120,7 +120,10 @@ server.registerTool('quick_insights', {
       'geographic',
       'user_demographics',
       'conversions',
-      'us_states'
+      'us_states',
+      'engagement_metrics',
+      'ecommerce_overview',
+      'device_technology'
     ]).describe('Type of quick insight report'),
     limit: z.number().optional().default(20).describe('Limit number of results')
   }
@@ -154,7 +157,7 @@ server.registerTool('quick_insights', {
     case 'geographic':
       reportConfig = {
         dimensions: ['country', 'region', 'city'],
-        metrics: ['activeUsers', 'sessions', 'newUsers'],
+        metrics: ['activeUsers', 'sessions', 'newUsers', 'bounceRate'],
         orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }]
       };
       break;
@@ -162,7 +165,7 @@ server.registerTool('quick_insights', {
     case 'user_demographics':
       reportConfig = {
         dimensions: ['userAgeBracket', 'userGender', 'country'],
-        metrics: ['activeUsers', 'sessions', 'averageSessionDuration']
+        metrics: ['activeUsers', 'sessions', 'averageSessionDuration', 'bounceRate']
       };
       break;
 
@@ -189,6 +192,28 @@ server.registerTool('quick_insights', {
             stringFilter: { matchType: 'EXACT', value: 'United States' }
           }
         },
+        orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }]
+      };
+      break;
+
+    case 'engagement_metrics':
+      reportConfig = {
+        dimensions: ['date'],
+        metrics: ['bounceRate', 'engagementRate', 'engagedSessions', 'averageSessionDuration', 'screenPageViewsPerSession', 'userEngagementDuration']
+      };
+      break;
+
+    case 'ecommerce_overview':
+      reportConfig = {
+        dimensions: ['date'],
+        metrics: ['totalRevenue', 'transactions', 'averagePurchaseRevenue', 'itemRevenue', 'addToCarts', 'checkouts', 'ecommercePurchases']
+      };
+      break;
+
+    case 'device_technology':
+      reportConfig = {
+        dimensions: ['deviceCategory', 'operatingSystem', 'browser'],
+        metrics: ['activeUsers', 'sessions', 'bounceRate', 'averageSessionDuration'],
         orderBys: [{ metric: { metricName: 'activeUsers' }, desc: true }]
       };
       break;
