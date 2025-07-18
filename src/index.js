@@ -7,7 +7,22 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const analyticsDataClient = new BetaAnalyticsDataClient();
+// Support both service account file and individual environment variables
+let analyticsDataClient;
+if (process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL && process.env.GOOGLE_PRIVATE_KEY) {
+  // Use individual environment variables (better for deployment)
+  analyticsDataClient = new BetaAnalyticsDataClient({
+    credentials: {
+      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      private_key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      project_id: process.env.GOOGLE_PROJECT_ID
+    }
+  });
+} else {
+  // Use service account file (for local development)
+  analyticsDataClient = new BetaAnalyticsDataClient();
+}
+
 const defaultPropertyId = process.env.GA_PROPERTY_ID;
 
 const server = new McpServer({
