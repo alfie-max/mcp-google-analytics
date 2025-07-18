@@ -1,0 +1,24 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+
+startCommand:
+  type: stdio
+  commandFunction:
+    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'node', args: ['src/index.js'], env: { GA_PROPERTY_ID: config.gaPropertyId, GOOGLE_APPLICATION_CREDENTIALS: config.googleCredentialsPath, NODE_ENV: 'production' } })
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - gaPropertyId
+      - googleCredentialsPath
+    properties:
+      gaPropertyId:
+        type: string
+        description: Google Analytics Property ID
+      googleCredentialsPath:
+        type: string
+        description: Path to Google service account JSON file inside the container
+  exampleConfig:
+    gaPropertyId: "123456789"
+    googleCredentialsPath: /secrets/ga-service-account.json
