@@ -1,0 +1,45 @@
+{
+  "name": "google-analytics-mcp",
+  "version": "1.0.0",
+  "description": "Google Analytics MCP Server for accessing GA4 data",
+  "author": "Your Name",
+  "license": "MIT",
+  "config": {
+    "type": "object",
+    "properties": {
+      "GA_PROPERTY_ID": {
+        "type": "string",
+        "description": "Google Analytics 4 property ID",
+        "title": "GA Property ID"
+      },
+      "GOOGLE_CREDENTIALS": {
+        "type": "string",
+        "description": "JSON string containing the complete Google service account credentials",
+        "title": "Google Service Account Credentials (JSON)"
+      }
+    },
+    "required": ["GA_PROPERTY_ID", "GOOGLE_CREDENTIALS"]
+  },
+  "tools": [
+    {
+      "name": "analytics_report",
+      "description": "Get comprehensive Google Analytics data with custom dimensions and metrics"
+    },
+    {
+      "name": "realtime_data", 
+      "description": "Get real-time analytics data for current active users and activity"
+    },
+    {
+      "name": "quick_insights",
+      "description": "Get predefined analytics insights for common use cases"
+    },
+    {
+      "name": "get_metadata",
+      "description": "Get available dimensions and metrics for Google Analytics property"
+    },
+    {
+      "name": "search_metadata",
+      "description": "Search for specific dimensions or metrics by name or category"
+    }
+  ]
+}
