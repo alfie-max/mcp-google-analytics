@@ -45,3 +45,10 @@ These can be set in a `.env` file or passed directly when configuring the MCP se
 - Report responses are returned as formatted JSON text
 - The `quick_insights` tool provides 10 pre-configured report types for common analytics needs
 - Error handling is minimal - errors from the Google Analytics API are passed through
+
+## Feature Shipping Workflow
+
+When completing a feature or making significant changes:
+1. After implementing and testing the feature, ask the user: "The feature is complete. Would you like me to ship it (commit and push)?"
+2. Only proceed with committing and pushing if the user explicitly confirms (e.g., "yes", "ship it", "go ahead")
+3. Use descriptive commit messages that explain what was changed and why
