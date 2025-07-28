@@ -6,6 +6,7 @@ dotenv.config();
 
 // Use environment variables for authentication
 const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+const serviceAccountEmail = credentials.client_email;
 const analyticsDataClient = new BetaAnalyticsDataClient({
   projectId: credentials.project_id,
   credentials: credentials
@@ -13,9 +14,10 @@ const analyticsDataClient = new BetaAnalyticsDataClient({
 
 async function testConnection() {
   try {
-    const propertyId = process.env.GA_PROPERTY_ID;
+    // Use command line argument or environment variable
+    const propertyId = process.argv[2] || process.env.GA_PROPERTY_ID;
     if (!propertyId) {
-      throw new Error('GA_PROPERTY_ID not found in environment variables');
+      throw new Error('Property ID required. Either set GA_PROPERTY_ID environment variable or pass as command line argument: node test-connection.js 123456789');
     }
 
     // Calculate dates for last 7 days
@@ -196,8 +198,39 @@ async function testConnection() {
     // Additional connection info
     console.log('\n📋 CONNECTION DETAILS:');
     console.log(`   - Property ID: ${propertyId}`);
-    console.log(`   - Service Account: ${credentials.client_email ? '✅ Configured' : '❌ Missing'}`);
+    console.log(`   - Service Account: ${serviceAccountEmail || '❌ Missing'}`);
     console.log(`   - Test Date Range: ${startDateStr} to ${endDateStr}`);
+    
+    // Test with an additional property ID if provided as second command line argument
+    if (process.argv[3] && process.argv[3] !== propertyId) {
+      console.log('\n🔄 Testing with additional property ID:', process.argv[3]);
+      console.log('=' .repeat(60));
+      
+      try {
+        const [testResponse] = await analyticsDataClient.runReport({
+          property: `properties/${process.argv[3]}`,
+          dateRanges: [{ startDate: startDateStr, endDate: endDateStr }],
+          dimensions: [{ name: 'date' }],
+          metrics: [{ name: 'activeUsers' }],
+          limit: 1
+        });
+        
+        console.log('✅ Access granted to property:', process.argv[3]);
+        console.log(`   - Active users: ${testResponse.rows?.[0]?.metricValues[0].value || 0}`);
+      } catch (error) {
+        if (error.code === 7 || error.message?.includes('permission')) {
+          console.log('❌ Permission denied for property:', process.argv[3]);
+          console.log('\n🔧 TO FIX THIS:');
+          console.log('1. Go to Google Analytics (analytics.google.com)');
+          console.log('2. Navigate to Admin > Property Access Management');
+          console.log(`3. Add ${serviceAccountEmail} with Viewer access`);
+          console.log('4. Try the query again');
+        } else {
+          console.log('❌ Error accessing property:', process.argv[3]);
+          console.log('   Error:', error.message);
+        }
+      }
+    }
 
   } catch (error) {
     console.log('💥 CRITICAL ERROR:');

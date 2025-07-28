@@ -27,7 +27,15 @@ The server uses:
 npm start
 
 # Test the Google Analytics connection and all tools
+# Uses GA_PROPERTY_ID from environment if available
 node test-connection.js
+
+# Test with a specific property ID as command line argument
+# This works even without GA_PROPERTY_ID in environment
+node test-connection.js 123456789
+
+# Test multiple property IDs for permission comparison
+node test-connection.js 123456789 987654321
 ```
 
 ## Configuration
@@ -40,11 +48,15 @@ These can be set in a `.env` file or passed directly when configuring the MCP se
 
 ## Key Implementation Details
 
-- All tools accept an optional `propertyId` parameter that defaults to the environment variable
+- All tools accept a `propertyId` parameter to query any GA4 property dynamically
+- If no `propertyId` is provided, tools fall back to the `GA_PROPERTY_ID` environment variable
 - The server uses the BetaAnalyticsDataClient from Google's official SDK
 - Report responses are returned as formatted JSON text
 - The `quick_insights` tool provides 10 pre-configured report types for common analytics needs
-- Error handling is minimal - errors from the Google Analytics API are passed through
+- Enhanced error handling provides specific guidance when permission is denied:
+  - Extracts service account email from credentials
+  - Provides step-by-step instructions to grant access
+  - Shows exactly which service account needs to be added to GA4
 
 ## Feature Shipping Workflow
 
