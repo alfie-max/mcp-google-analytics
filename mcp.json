@@ -7,18 +7,13 @@
   "config": {
     "type": "object",
     "properties": {
-      "GA_PROPERTY_ID": {
-        "type": "string",
-        "description": "Google Analytics 4 property ID",
-        "title": "GA Property ID"
-      },
       "GOOGLE_CREDENTIALS": {
         "type": "string",
         "description": "JSON string containing the complete Google service account credentials",
         "title": "Google Service Account Credentials (JSON)"
       }
     },
-    "required": ["GA_PROPERTY_ID", "GOOGLE_CREDENTIALS"]
+    "required": ["GOOGLE_CREDENTIALS"]
   },
   "tools": [
     {

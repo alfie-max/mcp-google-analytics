@@ -40,16 +40,17 @@ node test-connection.js 123456789 987654321
 
 ## Configuration
 
-The server requires two environment variables:
-- `GA_PROPERTY_ID`: Google Analytics 4 property ID
+The server requires only one environment variable:
 - `GOOGLE_CREDENTIALS`: JSON string containing the complete Google service account credentials
 
-These can be set in a `.env` file or passed directly when configuring the MCP server in Claude Desktop.
+Property IDs are provided dynamically by users in their queries - no configuration needed.
+
+This can be set in a `.env` file or passed directly when configuring the MCP server in Claude Desktop.
 
 ## Key Implementation Details
 
-- All tools accept a `propertyId` parameter to query any GA4 property dynamically
-- If no `propertyId` is provided, tools fall back to the `GA_PROPERTY_ID` environment variable
+- All tools require a `propertyId` parameter to query any GA4 property dynamically
+- No environment variable fallback - users must specify the property ID in each query
 - The server uses the BetaAnalyticsDataClient from Google's official SDK
 - Report responses are returned as formatted JSON text
 - The `quick_insights` tool provides 10 pre-configured report types for common analytics needs

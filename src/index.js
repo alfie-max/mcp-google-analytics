@@ -68,7 +68,7 @@ server.registerTool('analytics_report', {
   title: 'Analytics Report',
   description: 'Get comprehensive Google Analytics data with custom dimensions and metrics. Can create any type of report.',
   inputSchema: {
-    propertyId: z.string().describe('Google Analytics property ID (e.g., 123456789). If not provided, uses default from environment'),
+    propertyId: z.string().describe('Google Analytics property ID (e.g., 123456789). Required for all queries.'),
     startDate: z.string().describe('Start date (YYYY-MM-DD)'),
     endDate: z.string().describe('End date (YYYY-MM-DD)'),
     dimensions: z.array(z.string()).optional().describe('Dimensions to query (e.g., country, pagePath, sessionSource)'),
@@ -83,19 +83,20 @@ server.registerTool('analytics_report', {
     limit: z.number().optional().default(100).describe('Limit number of results')
   }
 }, async ({ propertyId, startDate, endDate, dimensions = [], metrics, dimensionFilter, metricFilter, orderBy, limit = 100 }) => {
-  // Use provided property ID or fall back to default
-  const targetPropertyId = propertyId || defaultPropertyId;
-  if (!targetPropertyId) {
+  // Property ID is now required - no fallback to environment variable
+  if (!propertyId) {
     return {
       content: [{
         type: 'text',
         text: JSON.stringify({
-          error: 'No property ID provided. Please specify a propertyId parameter.',
-          example: 'propertyId: "123456789"'
+          error: 'Property ID is required. Please specify a propertyId parameter.',
+          example: 'propertyId: "123456789"',
+          instruction: 'Please provide the Google Analytics 4 property ID you want to query.'
         }, null, 2)
       }]
     };
   }
+  const targetPropertyId = propertyId;
 
   return executeWithErrorHandling(async () => {
     const reportRequest = {
@@ -140,25 +141,26 @@ server.registerTool('realtime_data', {
   title: 'Real-time Data',
   description: 'Get real-time analytics data for current active users and activity',
   inputSchema: {
-    propertyId: z.string().describe('Google Analytics property ID (e.g., 123456789). If not provided, uses default from environment'),
+    propertyId: z.string().describe('Google Analytics property ID (e.g., 123456789). Required for all queries.'),
     dimensions: z.array(z.string()).optional().describe('Dimensions for real-time data (e.g., country, city, pagePath)'),
     metrics: z.array(z.string()).optional().default(['activeUsers']).describe('Real-time metrics (default: activeUsers)'),
     limit: z.number().optional().default(50).describe('Limit number of results')
   }
 }, async ({ propertyId, dimensions = [], metrics = ['activeUsers'], limit = 50 }) => {
-  // Use provided property ID or fall back to default
-  const targetPropertyId = propertyId || defaultPropertyId;
-  if (!targetPropertyId) {
+  // Property ID is now required - no fallback to environment variable
+  if (!propertyId) {
     return {
       content: [{
         type: 'text',
         text: JSON.stringify({
-          error: 'No property ID provided. Please specify a propertyId parameter.',
-          example: 'propertyId: "123456789"'
+          error: 'Property ID is required. Please specify a propertyId parameter.',
+          example: 'propertyId: "123456789"',
+          instruction: 'Please provide the Google Analytics 4 property ID you want to query.'
         }, null, 2)
       }]
     };
   }
+  const targetPropertyId = propertyId;
 
   return executeWithErrorHandling(async () => {
     const [response] = await analyticsDataClient.runRealtimeReport({
@@ -184,7 +186,7 @@ server.registerTool('quick_insights', {
   title: 'Quick Insights',
   description: 'Get predefined analytics insights for common use cases',
   inputSchema: {
-    propertyId: z.string().describe('Google Analytics property ID (e.g., 123456789). If not provided, uses default from environment'),
+    propertyId: z.string().describe('Google Analytics property ID (e.g., 123456789). Required for all queries.'),
     startDate: z.string().describe('Start date (YYYY-MM-DD)'),
     endDate: z.string().describe('End date (YYYY-MM-DD)'),
     reportType: z.enum([
@@ -202,19 +204,20 @@ server.registerTool('quick_insights', {
     limit: z.number().optional().default(20).describe('Limit number of results')
   }
 }, async ({ propertyId, startDate, endDate, reportType, limit = 20 }) => {
-  // Use provided property ID or fall back to default
-  const targetPropertyId = propertyId || defaultPropertyId;
-  if (!targetPropertyId) {
+  // Property ID is now required - no fallback to environment variable
+  if (!propertyId) {
     return {
       content: [{
         type: 'text',
         text: JSON.stringify({
-          error: 'No property ID provided. Please specify a propertyId parameter.',
-          example: 'propertyId: "123456789"'
+          error: 'Property ID is required. Please specify a propertyId parameter.',
+          example: 'propertyId: "123456789"',
+          instruction: 'Please provide the Google Analytics 4 property ID you want to query.'
         }, null, 2)
       }]
     };
   }
+  const targetPropertyId = propertyId;
 
   return executeWithErrorHandling(async () => {
     let reportConfig = {};
@@ -342,23 +345,24 @@ server.registerTool('get_metadata', {
   title: 'Get Analytics Metadata',
   description: 'Get available dimensions and metrics for Google Analytics property',
   inputSchema: {
-    propertyId: z.string().describe('Google Analytics property ID (e.g., 123456789). If not provided, uses default from environment'),
+    propertyId: z.string().describe('Google Analytics property ID (e.g., 123456789). Required for all queries.'),
     type: z.enum(['dimensions', 'metrics', 'both']).optional().default('both').describe('Type of metadata to retrieve')
   }
 }, async ({ propertyId, type = 'both' }) => {
-  // Use provided property ID or fall back to default
-  const targetPropertyId = propertyId || defaultPropertyId;
-  if (!targetPropertyId) {
+  // Property ID is now required - no fallback to environment variable
+  if (!propertyId) {
     return {
       content: [{
         type: 'text',
         text: JSON.stringify({
-          error: 'No property ID provided. Please specify a propertyId parameter.',
-          example: 'propertyId: "123456789"'
+          error: 'Property ID is required. Please specify a propertyId parameter.',
+          example: 'propertyId: "123456789"',
+          instruction: 'Please provide the Google Analytics 4 property ID you want to query.'
         }, null, 2)
       }]
     };
   }
+  const targetPropertyId = propertyId;
 
   return executeWithErrorHandling(async () => {
     const [response] = await analyticsDataClient.getMetadata({
@@ -404,25 +408,26 @@ server.registerTool('search_metadata', {
   title: 'Search Analytics Metadata',
   description: 'Search for specific dimensions or metrics by name or category',
   inputSchema: {
-    propertyId: z.string().describe('Google Analytics property ID (e.g., 123456789). If not provided, uses default from environment'),
+    propertyId: z.string().describe('Google Analytics property ID (e.g., 123456789). Required for all queries.'),
     query: z.string().describe('Search term to find dimensions/metrics'),
     type: z.enum(['dimensions', 'metrics', 'both']).optional().default('both').describe('Type of metadata to search'),
     category: z.string().optional().describe('Filter by category (e.g., "USER", "SESSION", "PAGE", "EVENT")')
   }
 }, async ({ propertyId, query, type = 'both', category }) => {
-  // Use provided property ID or fall back to default
-  const targetPropertyId = propertyId || defaultPropertyId;
-  if (!targetPropertyId) {
+  // Property ID is now required - no fallback to environment variable
+  if (!propertyId) {
     return {
       content: [{
         type: 'text',
         text: JSON.stringify({
-          error: 'No property ID provided. Please specify a propertyId parameter.',
-          example: 'propertyId: "123456789"'
+          error: 'Property ID is required. Please specify a propertyId parameter.',
+          example: 'propertyId: "123456789"',
+          instruction: 'Please provide the Google Analytics 4 property ID you want to query.'
         }, null, 2)
       }]
     };
   }
+  const targetPropertyId = propertyId;
 
   return executeWithErrorHandling(async () => {
     const [response] = await analyticsDataClient.getMetadata({
