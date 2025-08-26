@@ -490,16 +490,103 @@ async function main() {
     res.json({ status: 'ok' });
   });
   
-  // Create a server instance for each connection (stateless)
+  // MCP Streamable HTTP endpoint - supports both POST and GET
   app.all('/mcp', async (req, res) => {
     try {
-      const server = getServer();
-      const transport = new StreamableHTTPServerTransport({
-        sessionIdGenerator: () => randomUUID()
+      // Validate Origin header to prevent DNS rebinding attacks
+      const origin = req.get('Origin');
+      if (origin && !origin.startsWith('http://localhost') && !origin.startsWith('https://localhost')) {
+        return res.status(403).json({
+          jsonrpc: '2.0',
+          error: {
+            code: -32600,
+            message: 'Invalid origin',
+          },
+          id: null,
+        });
+      }
+
+      // For GET requests (SSE connection setup)
+      if (req.method === 'GET') {
+        res.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Accept, Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        });
+        
+        // Keep connection alive
+        res.write(': connected\n\n');
+        
+        // Handle connection close
+        req.on('close', () => {
+          res.end();
+        });
+        
+        return;
+      }
+
+      // For POST requests - handle JSON-RPC messages
+      if (req.method === 'POST') {
+        // Validate Accept header
+        const accept = req.get('Accept');
+        if (!accept || (!accept.includes('application/json') && !accept.includes('text/event-stream'))) {
+          return res.status(406).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32600,
+              message: 'Must accept application/json or text/event-stream',
+            },
+            id: null,
+          });
+        }
+
+        // Handle JSON-RPC request
+        const body = req.body;
+        if (!body) {
+          return res.status(400).json({
+            jsonrpc: '2.0',
+            error: {
+              code: -32600,
+              message: 'Invalid Request',
+            },
+            id: null,
+          });
+        }
+
+        // Create server and transport for this request
+        const server = getServer();
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: () => randomUUID()
+        });
+        
+        await server.connect(transport);
+        await transport.handleRequest(req, res, body);
+        return;
+      }
+
+      // Handle OPTIONS for CORS preflight
+      if (req.method === 'OPTIONS') {
+        res.writeHead(200, {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'Accept, Content-Type, Authorization',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
+        });
+        res.end();
+        return;
+      }
+
+      // Unsupported method
+      res.status(405).json({
+        jsonrpc: '2.0',
+        error: {
+          code: -32600,
+          message: 'Method not allowed',
+        },
+        id: null,
       });
-      
-      await server.connect(transport);
-      await transport.handleRequest(req, res, req.body);
     } catch (error) {
       console.error('Error handling MCP request:', error);
       if (!res.headersSent) {
@@ -509,7 +596,7 @@ async function main() {
             code: -32603,
             message: 'Internal server error',
           },
-          id: req.body?.id || null,
+          id: null,
         });
       }
     }
