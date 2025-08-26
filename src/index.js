@@ -4,7 +4,6 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import express from 'express';
 import cors from 'cors';
 import { randomUUID } from 'node:crypto';
-import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
 import { BetaAnalyticsDataClient } from '@google-analytics/data';
 import { z } from 'zod';
 import dotenv from 'dotenv';
@@ -486,92 +485,20 @@ async function main() {
   app.use(cors());
   app.use(express.json());
   
-  // Add a simple health check endpoint
+  // Health check endpoint
   app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
   });
   
-  // Map to store transports by session ID with activity tracking
-  const transports = {};
-  const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-  
-  // Session cleanup interval
-  const cleanupInterval = setInterval(() => {
-    const now = Date.now();
-    for (const [sessionId, sessionInfo] of Object.entries(transports)) {
-      if (now - sessionInfo.lastActivity > SESSION_TIMEOUT) {
-        console.log(`Cleaning up inactive session: ${sessionId}`);
-        try {
-          sessionInfo.transport.close?.();
-        } catch (error) {
-          console.error(`Error closing transport for session ${sessionId}:`, error);
-        }
-        delete transports[sessionId];
-      }
-    }
-  }, 5 * 60 * 1000); // Check every 5 minutes
-  
-  // MCP endpoint with session management
+  // Create a server instance for each connection (stateless)
   app.all('/mcp', async (req, res) => {
-    const sessionId = req.headers['mcp-session-id'];
-    
     try {
-      let transport;
-      if (sessionId && transports[sessionId]) {
-        // Reuse existing transport and update activity
-        const sessionInfo = transports[sessionId];
-        sessionInfo.lastActivity = Date.now();
-        transport = sessionInfo.transport;
-      } else if (!sessionId && isInitializeRequest(req.body)) {
-        // New initialization request
-        transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-          onsessioninitialized: (sessionId) => {
-            console.log(`Session initialized with ID: ${sessionId}`);
-            transports[sessionId] = {
-              transport,
-              lastActivity: Date.now()
-            };
-          }
-        });
-        
-        // Set up onclose handler to clean up transport when closed
-        transport.onclose = () => {
-          const sid = transport.sessionId;
-          if (sid && transports[sid]) {
-            console.log(`Transport closed for session ${sid}, removing from transports map`);
-            delete transports[sid];
-          }
-        };
-        
-        // Connect the transport to the MCP server with better error handling
-        try {
-          const server = getServer();
-          await server.connect(transport);
-          await transport.handleRequest(req, res, req.body);
-        } catch (error) {
-          console.error('Failed to create or connect server:', error);
-          res.status(500).json({
-            jsonrpc: '2.0',
-            error: { code: -32603, message: 'Server initialization failed' },
-            id: null
-          });
-        }
-        return;
-      } else {
-        // Invalid request
-        res.status(400).json({
-          jsonrpc: '2.0',
-          error: {
-            code: -32000,
-            message: 'Bad Request: No valid session ID provided',
-          },
-          id: null,
-        });
-        return;
-      }
+      const server = getServer();
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: () => randomUUID()
+      });
       
-      // Handle the request with existing transport
+      await server.connect(transport);
       await transport.handleRequest(req, res, req.body);
     } catch (error) {
       console.error('Error handling MCP request:', error);
@@ -582,7 +509,7 @@ async function main() {
             code: -32603,
             message: 'Internal server error',
           },
-          id: null,
+          id: req.body?.id || null,
         });
       }
     }
@@ -591,27 +518,6 @@ async function main() {
   app.listen(PORT, () => {
     console.log(`MCP server running on port ${PORT}`);
     console.log(`Connect to: http://localhost:${PORT}/mcp`);
-  });
-
-  // Handle graceful shutdown
-  process.on('SIGINT', async () => {
-    console.log('Shutting down server...');
-    
-    // Clear the cleanup interval
-    clearInterval(cleanupInterval);
-    
-    // Close all active transports
-    for (const [sessionId, sessionInfo] of Object.entries(transports)) {
-      try {
-        console.log(`Closing transport for session ${sessionId}`);
-        await sessionInfo.transport.close?.();
-      } catch (error) {
-        console.error(`Error closing transport for session ${sessionId}:`, error);
-      }
-    }
-    
-    console.log('Server shutdown complete');
-    process.exit(0);
   });
 }
 

@@ -26,7 +26,7 @@
   },
   "mcp": {
     "transport": {
-      "type": "http",
+      "type": "streamable-http",
       "host": "localhost",
       "port": 3000,
       "path": "/mcp"
